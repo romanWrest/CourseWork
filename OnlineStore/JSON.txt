@@ -1,0 +1,17 @@
+{
+  "Jwt": {
+    "Key": "YourSuperSecretKey12345678901234", // Минимум 16 символов
+    "Issuer": "OnlineStore",
+    "Audience": "OnlineStoreClient"
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=OnlineStore.db"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

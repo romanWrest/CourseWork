@@ -1,0 +1,80 @@
+using Microsoft.Extensions.Hosting;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+
+namespace OnlineStore.Services
+{
+    public class NotificationService : BackgroundService
+    {
+        private readonly IConnectionFactory _connectionFactory;
+
+        public NotificationService()
+        {
+            _connectionFactory = new ConnectionFactory { HostName = "localhost", Port = 5672 };
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            Console.WriteLine("NotificationService: Starting...");
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    using var connection = _connectionFactory.CreateConnection();
+                    using var channel = connection.CreateModel();
+
+                    Console.WriteLine("NotificationService: Connected to RabbitMQ");
+
+                    channel.QueueDeclare(queue: "order_created_queue", durable: false, exclusive: false, autoDelete: false, arguments: null);
+                    channel.QueueDeclare(queue: "order_status_updates", durable: false, exclusive: false, autoDelete: false, arguments: null);
+
+                    var consumer = new EventingBasicConsumer(channel);
+                    consumer.Received += (model, ea) =>
+                    {
+                        var body = ea.Body.ToArray();
+                        var message = Encoding.UTF8.GetString(body);
+                        var routingKey = ea.RoutingKey;
+
+                        if (routingKey == "order_created_queue")
+                        {
+                            var order = JsonConvert.DeserializeObject<dynamic>(message);
+                            if (order?.Id != null)
+                            {
+                                Console.WriteLine($"Notification: New order created - Order ID: {order.Id}, User ID: {order.UserId}, Total: {order.TotalPrice}");
+                            }
+                        }
+                        else if (routingKey == "order_status_updates")
+                        {
+                            var statusUpdate = JsonConvert.DeserializeObject<dynamic>(message);
+                            if (statusUpdate?.Id != null)
+                            {
+                                Console.WriteLine($"Notification: Order ID {statusUpdate.Id} status changed to '{statusUpdate.Status}' for User ID {statusUpdate.UserId}");
+                            }
+                        }
+                    };
+
+                    channel.BasicConsume(queue: "order_created_queue", autoAck: true, consumer: consumer);
+                    channel.BasicConsume(queue: "order_status_updates", autoAck: true, consumer: consumer);
+
+                    // Ждём завершения или остановки службы
+                    while (!stoppingToken.IsCancellationRequested && connection.IsOpen)
+                    {
+                        await Task.Delay(1000, stoppingToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"NotificationService: Failed to connect or process RabbitMQ - {ex.Message}");
+                    await Task.Delay(5000, stoppingToken); // Ждём перед повторной попыткой
+                }
+            }
+
+            Console.WriteLine("NotificationService: Stopped.");
+        }
+    }
+}

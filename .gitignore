@@ -1,0 +1,50 @@
+# Visual Studio / .NET
+bin/
+obj/
+*.user
+*.suo
+*.csproj.user
+.vscode/
+.idea/
+
+# SQLite database
+*.db
+*.db-journal
+
+# Logs
+*.log
+logs/
+
+# Environment variables and sensitive configuration
+appsettings.Development.json
+appsettings.*.json
+
+# Dependency directories
+packages/
+
+# Docker-related files (optional, if you don't want to include local Docker data)
+*.dockerignore
+docker-compose.override.yml
+.docker/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Build output
+[Dd]ebug/
+[Rr]elease/
+
+# Rider (JetBrains) specific
+*.sln.iml
+
+# NuGet packages
+*.nupkg
+.nuget/
+
+# macOS-specific
+.DS_Store
+
+# Windows-specific
+Thumbs.db
